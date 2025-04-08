@@ -1,0 +1,1357 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Modern Renk Seçici</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .color-gradient {
+            background: linear-gradient(to right, #ff0000, #ffff00, #00ff00, #00ffff, #0000ff, #ff00ff, #ff0000);
+        }
+        .color-palette {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(40px, 1fr));
+            gap: 8px;
+        }
+        .color-box {
+            aspect-ratio: 1;
+            transition: all 0.3s ease;
+            position: relative;
+            cursor: pointer;
+        }
+        .color-box:hover {
+            transform: scale(1.1);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .color-box::after {
+            content: attr(title);
+            position: absolute;
+            bottom: -25px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 10px;
+            white-space: nowrap;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+            pointer-events: none;
+            z-index: 10;
+        }
+        .color-box:hover::after {
+            opacity: 1;
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 8px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+        .color-info {
+            transition: all 0.3s ease;
+        }
+        .color-info:hover {
+            transform: translateY(-2px);
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in {
+            animation: fadeIn 0.3s ease-out;
+        }
+        .image-picker {
+            position: relative;
+            overflow: hidden;
+            border: 2px dashed #cbd5e0;
+            transition: all 0.3s ease;
+        }
+        .image-picker:hover {
+            border-color: #3b82f6;
+        }
+        .image-picker input[type="file"] {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            cursor: pointer;
+        }
+        .image-preview {
+            position: relative;
+            cursor: crosshair;
+        }
+        .color-picker-cursor {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            border: 2px solid white;
+            border-radius: 50%;
+            pointer-events: none;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 0 0 2px rgba(0,0,0,0.5);
+        }
+        .color-preview-cursor {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            border: 2px solid white;
+            border-radius: 50%;
+            pointer-events: none;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 0 0 2px rgba(0,0,0,0.5);
+            z-index: 10;
+        }
+        .color-value-tooltip {
+            position: absolute;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            pointer-events: none;
+            z-index: 20;
+            white-space: nowrap;
+        }
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+        .gradient-border {
+            position: relative;
+            border-radius: 1rem;
+            background: linear-gradient(45deg, #3b82f6, #8b5cf6, #ec4899);
+            padding: 3px;
+        }
+        .gradient-border > div {
+            background: white;
+            border-radius: 0.875rem;
+        }
+        
+        /* Sağ tıklama menüsünü engelle */
+        * {
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+        }
+        
+        /* Sadece input ve textarea elementlerinde seçime izin ver */
+        input, textarea {
+            -webkit-user-select: text;
+            -moz-user-select: text;
+            -ms-user-select: text;
+            user-select: text;
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 min-h-screen">
+    <!-- Navbar Menü -->
+    <nav class="bg-white shadow-lg sticky top-0 z-50">
+        <div class="container mx-auto px-4">
+            <div class="flex justify-between items-center py-4">
+                <!-- Logo ve Site Adı -->
+                <div class="flex items-center space-x-2">
+                    <i class="fas fa-palette text-2xl text-blue-500"></i>
+                    <span class="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-purple-600">Modern Renk Seçici</span>
+                </div>
+                
+                <!-- Ana Menü -->
+                <div class="hidden md:flex space-x-8">
+                    <a href="#" class="text-gray-700 hover:text-blue-500 transition-colors duration-300 flex items-center">
+                        <i class="fas fa-home mr-2"></i> Ana Sayfa
+                    </a>
+                    <a href="#" class="text-gray-700 hover:text-blue-500 transition-colors duration-300 flex items-center">
+                        <i class="fas fa-palette mr-2"></i> Renk Paletleri
+                    </a>
+                    <a href="#" class="text-gray-700 hover:text-blue-500 transition-colors duration-300 flex items-center">
+                        <i class="fas fa-gradient mr-2"></i> Gradientler
+                    </a>
+                    <a href="#" class="text-gray-700 hover:text-blue-500 transition-colors duration-300 flex items-center">
+                        <i class="fas fa-book mr-2"></i> Rehber
+                    </a>
+                    <a href="#" class="text-gray-700 hover:text-blue-500 transition-colors duration-300 flex items-center">
+                        <i class="fas fa-info-circle mr-2"></i> Hakkında
+                    </a>
+                </div>
+                
+                <!-- Sağ Menü -->
+                <div class="flex items-center space-x-4">
+                    <div class="relative group">
+                        <button class="bg-gradient-to-r from-blue-500 to-purple-500 text-white px-4 py-2 rounded-lg hover:from-blue-600 hover:to-purple-600 transition duration-300 flex items-center">
+                            <i class="fas fa-file-import mr-2"></i> İçe Aktar
+                        </button>
+                        <div class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg py-2 hidden group-hover:block z-50">
+                            <input type="file" id="importFile" accept=".json" class="hidden">
+                            <button id="importPalettesBtn" class="w-full text-left px-4 py-2 text-gray-700 hover:bg-blue-50 flex items-center">
+                                <i class="fas fa-palette mr-2 text-blue-500"></i> Renk Paletleri
+                            </button>
+                            <button id="importGradientsBtn" class="w-full text-left px-4 py-2 text-gray-700 hover:bg-blue-50 flex items-center">
+                                <i class="fas fa-gradient mr-2 text-purple-500"></i> Gradientler
+                            </button>
+                            <button id="importAllBtn" class="w-full text-left px-4 py-2 text-gray-700 hover:bg-blue-50 flex items-center">
+                                <i class="fas fa-file-import mr-2 text-green-500"></i> Tüm Veriler
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="relative group">
+                        <button class="bg-gradient-to-r from-green-500 to-teal-500 text-white px-4 py-2 rounded-lg hover:from-green-600 hover:to-teal-600 transition duration-300 flex items-center">
+                            <i class="fas fa-file-export mr-2"></i> Dışa Aktar
+                        </button>
+                        <div class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg py-2 hidden group-hover:block z-50">
+                            <button id="exportPalettesBtn" class="w-full text-left px-4 py-2 text-gray-700 hover:bg-blue-50 flex items-center">
+                                <i class="fas fa-palette mr-2 text-blue-500"></i> Renk Paletleri
+                            </button>
+                            <button id="exportGradientsBtn" class="w-full text-left px-4 py-2 text-gray-700 hover:bg-blue-50 flex items-center">
+                                <i class="fas fa-gradient mr-2 text-purple-500"></i> Gradientler
+                            </button>
+                            <button id="exportAllBtn" class="w-full text-left px-4 py-2 text-gray-700 hover:bg-blue-50 flex items-center">
+                                <i class="fas fa-file-export mr-2 text-green-500"></i> Tüm Veriler
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <button class="bg-gradient-to-r from-blue-500 to-purple-500 text-white px-4 py-2 rounded-lg hover:from-blue-600 hover:to-purple-600 transition duration-300 flex items-center">
+                        <i class="fas fa-download mr-2"></i> İndir
+                    </button>
+                    
+                    <!-- Mobil Menü Butonu -->
+                    <button id="mobileMenuBtn" class="md:hidden text-gray-700 hover:text-blue-500 focus:outline-none">
+                        <i class="fas fa-bars text-xl"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Mobil Menü (Varsayılan olarak gizli) -->
+            <div id="mobileMenu" class="md:hidden hidden pb-4">
+                <div class="flex flex-col space-y-3">
+                    <a href="#" class="text-gray-700 hover:text-blue-500 transition-colors duration-300 flex items-center py-2">
+                        <i class="fas fa-home mr-2"></i> Ana Sayfa
+                    </a>
+                    <a href="#" class="text-gray-700 hover:text-blue-500 transition-colors duration-300 flex items-center py-2">
+                        <i class="fas fa-palette mr-2"></i> Renk Paletleri
+                    </a>
+                    <a href="#" class="text-gray-700 hover:text-blue-500 transition-colors duration-300 flex items-center py-2">
+                        <i class="fas fa-gradient mr-2"></i> Gradientler
+                    </a>
+                    <a href="#" class="text-gray-700 hover:text-blue-500 transition-colors duration-300 flex items-center py-2">
+                        <i class="fas fa-book mr-2"></i> Rehber
+                    </a>
+                    <a href="#" class="text-gray-700 hover:text-blue-500 transition-colors duration-300 flex items-center py-2">
+                        <i class="fas fa-info-circle mr-2"></i> Hakkında
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mx-auto px-4 py-8">
+        <h1 class="text-5xl font-bold text-center mb-2 bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-purple-600">Modern Renk Seçici</h1>
+        <p class="text-center text-gray-600 mb-8">Profesyonel renk seçimi ve yönetimi için gelişmiş araçlar</p>
+        
+        <div class="gradient-border max-w-5xl mx-auto">
+            <div class="p-6">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <!-- Sol Panel -->
+                    <div class="space-y-6">
+                        <!-- Renk Seçici -->
+                        <div class="space-y-4 glass-effect p-4 rounded-xl">
+                            <div class="flex flex-col space-y-2">
+                                <label class="text-gray-700 font-medium flex items-center">
+                                    <i class="fas fa-palette mr-2 text-blue-500"></i>
+                                    Renk Seçin
+                                </label>
+                                <input type="color" id="colorPicker" class="h-12 w-full cursor-pointer rounded-lg">
+                            </div>
+                            
+                            <!-- Renk Formatı -->
+                            <div class="flex flex-col space-y-2">
+                                <label class="text-gray-700 font-medium flex items-center">
+                                    <i class="fas fa-code mr-2 text-green-500"></i>
+                                    Renk Formatı
+                                </label>
+                                <select id="colorFormat" class="border rounded-lg p-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                    <option value="hex">HEX</option>
+                                    <option value="rgb">RGB</option>
+                                    <option value="hsl">HSL</option>
+                                    <option value="cmyk">CMYK</option>
+                                </select>
+                            </div>
+
+                            <!-- Renk Değeri -->
+                            <div class="flex flex-col space-y-2">
+                                <label class="text-gray-700 font-medium flex items-center">
+                                    <i class="fas fa-hashtag mr-2 text-purple-500"></i>
+                                    Renk Değeri
+                                </label>
+                                <div class="relative">
+                                    <input type="text" id="colorValue" class="border rounded-lg p-2 w-full pr-10" readonly>
+                                    <button id="copyBtn" class="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-blue-500">
+                                        <i class="fas fa-copy"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Butonlar -->
+                            <div class="flex space-x-3">
+                                <button id="saveBtn" class="flex-1 bg-gradient-to-r from-green-500 to-green-600 text-white px-4 py-2 rounded-lg hover:from-green-600 hover:to-green-700 transition duration-300 flex items-center justify-center">
+                                    <i class="fas fa-save mr-2"></i>Kaydet
+                                </button>
+                                <button id="resetBtn" class="flex-1 bg-gradient-to-r from-red-500 to-red-600 text-white px-4 py-2 rounded-lg hover:from-red-600 hover:to-red-700 transition duration-300 flex items-center justify-center">
+                                    <i class="fas fa-trash mr-2"></i>Sıfırla
+                                </button>
+                            </div>
+                            
+                            <!-- Her Şeyi Sıfırla Butonu -->
+                            <div class="mt-4">
+                                <button id="resetAllBtn" class="w-full bg-gradient-to-r from-gray-800 to-gray-900 text-white px-4 py-3 rounded-lg hover:from-gray-900 hover:to-black transition duration-300 flex items-center justify-center">
+                                    <i class="fas fa-broom mr-2"></i>Her Şeyi Sıfırla
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Renk Bilgileri -->
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="color-info glass-effect p-4 rounded-xl">
+                                <h3 class="text-sm font-medium text-gray-600 mb-2">Kontrast Oranı</h3>
+                                <p id="contrastRatio" class="text-lg font-semibold text-gray-800">-</p>
+                            </div>
+                            <div class="color-info glass-effect p-4 rounded-xl">
+                                <h3 class="text-sm font-medium text-gray-600 mb-2">Parlaklık</h3>
+                                <p id="brightness" class="text-lg font-semibold text-gray-800">-</p>
+                            </div>
+                        </div>
+
+                        <!-- Görselden Renk Seçme -->
+                        <div class="glass-effect p-4 rounded-xl space-y-4">
+                            <label class="text-gray-700 font-medium flex items-center">
+                                <i class="fas fa-image mr-2 text-indigo-500"></i>
+                                Görselden Renk Seç
+                            </label>
+                            <div class="image-picker rounded-lg p-4 text-center">
+                                <input type="file" id="imageInput" accept="image/*">
+                                <div class="py-8">
+                                    <i class="fas fa-cloud-upload-alt text-4xl text-gray-400 mb-2"></i>
+                                    <p class="text-gray-600">Görsel yüklemek için tıklayın veya sürükleyin</p>
+                                </div>
+                            </div>
+                            <div id="imagePreview" class="hidden">
+                                <div class="relative rounded-lg overflow-hidden">
+                                    <img id="previewImage" class="w-full h-48 object-cover">
+                                    <div id="colorPickerCursor" class="color-picker-cursor hidden"></div>
+                                    <div id="colorValueTooltip" class="color-value-tooltip hidden"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Sağ Panel -->
+                    <div class="space-y-6">
+                        <!-- Renk Önizleme -->
+                        <div class="space-y-4 glass-effect p-4 rounded-xl">
+                            <label class="text-gray-700 font-medium flex items-center">
+                                <i class="fas fa-eye mr-2 text-indigo-500"></i>
+                                Renk Önizleme
+                            </label>
+                            <div id="colorPreview" class="h-32 rounded-lg border shadow-inner"></div>
+                        </div>
+
+                        <!-- Renk Geçmişi -->
+                        <div class="space-y-4 glass-effect p-4 rounded-xl">
+                            <label class="text-gray-700 font-medium flex items-center">
+                                <i class="fas fa-history mr-2 text-orange-500"></i>
+                                Renk Geçmişi
+                            </label>
+                            <div id="colorHistory" class="color-palette h-32 overflow-y-auto p-2 border rounded-lg custom-scrollbar">
+                                <!-- Renk geçmişi buraya dinamik olarak eklenecek -->
+                            </div>
+                        </div>
+
+                        <!-- Popüler Renkler -->
+                        <div class="space-y-4 glass-effect p-4 rounded-xl">
+                            <div class="flex justify-between items-center">
+                                <label class="text-gray-700 font-medium flex items-center">
+                                    <i class="fas fa-star mr-2 text-yellow-500"></i>
+                                    Popüler Renkler
+                                </label>
+                                <button id="addPopularColorBtn" class="text-blue-500 hover:text-blue-700">
+                                    <i class="fas fa-plus-circle"></i>
+                                </button>
+                            </div>
+                            <div id="popularColors" class="color-palette p-2 border rounded-lg">
+                                <div class="color-box bg-red-500 rounded cursor-pointer" title="#EF4444"></div>
+                                <div class="color-box bg-blue-500 rounded cursor-pointer" title="#3B82F6"></div>
+                                <div class="color-box bg-green-500 rounded cursor-pointer" title="#10B981"></div>
+                                <div class="color-box bg-yellow-500 rounded cursor-pointer" title="#F59E0B"></div>
+                                <div class="color-box bg-purple-500 rounded cursor-pointer" title="#8B5CF6"></div>
+                                <div class="color-box bg-pink-500 rounded cursor-pointer" title="#EC4899"></div>
+                                <div class="color-box bg-indigo-500 rounded cursor-pointer" title="#6366F1"></div>
+                                <div class="color-box bg-gray-500 rounded cursor-pointer" title="#6B7280"></div>
+                            </div>
+                        </div>
+                        
+                        <!-- Renk Paletleri -->
+                        <div class="space-y-4 glass-effect p-4 rounded-xl">
+                            <div class="flex justify-between items-center">
+                                <label class="text-gray-700 font-medium flex items-center">
+                                    <i class="fas fa-palette mr-2 text-purple-500"></i>
+                                    Renk Paletleri
+                                </label>
+                                <button id="savePaletteBtn" class="text-blue-500 hover:text-blue-700">
+                                    <i class="fas fa-save"></i> Palet Kaydet
+                                </button>
+                            </div>
+                            <div id="colorPalettes" class="space-y-4">
+                                <!-- Paletler buraya dinamik olarak eklenecek -->
+                            </div>
+                        </div>
+                        
+                        <!-- Gradient Oluşturucu -->
+                        <div class="space-y-4 glass-effect p-4 rounded-xl">
+                            <div class="flex justify-between items-center">
+                                <label class="text-gray-700 font-medium flex items-center">
+                                    <i class="fas fa-gradient mr-2 text-indigo-500"></i>
+                                    Gradient Oluşturucu
+                                </label>
+                                <button id="saveGradientBtn" class="text-blue-500 hover:text-blue-700">
+                                    <i class="fas fa-save"></i> Gradient Kaydet
+                                </button>
+                            </div>
+                            <div class="space-y-4">
+                                <div class="flex space-x-2">
+                                    <select id="paletteSelect" class="flex-1 border rounded-lg p-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                        <option value="">Palet Seçin</option>
+                                    </select>
+                                    <button id="createGradientBtn" class="bg-gradient-to-r from-indigo-500 to-purple-500 text-white px-4 py-2 rounded-lg hover:from-indigo-600 hover:to-purple-600 transition duration-300">
+                                        <i class="fas fa-magic"></i>
+                                    </button>
+                                </div>
+                                <div id="gradientPreview" class="h-24 rounded-lg border shadow-inner"></div>
+                                <div class="flex space-x-2">
+                                    <div class="flex-1 space-y-2">
+                                        <div class="flex justify-between items-center">
+                                            <label class="text-sm text-gray-600">Gradient Açısı</label>
+                                            <span id="gradientAngleValue" class="text-sm font-medium">0°</span>
+                                        </div>
+                                        <input type="range" id="gradientAngle" min="0" max="360" value="0" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                                    </div>
+                                    <button id="copyGradientBtn" class="bg-gradient-to-r from-green-500 to-green-600 text-white px-4 py-2 rounded-lg hover:from-green-600 hover:to-green-700 transition duration-300">
+                                        <i class="fas fa-copy"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Gradient Kataloğu -->
+                        <div class="space-y-4 glass-effect p-4 rounded-xl">
+                            <div class="flex justify-between items-center">
+                                <label class="text-gray-700 font-medium flex items-center">
+                                    <i class="fas fa-images mr-2 text-pink-500"></i>
+                                    Gradient Kataloğu
+                                </label>
+                            </div>
+                            <div id="gradientCatalog" class="grid grid-cols-2 gap-4">
+                                <!-- Gradientler buraya dinamik olarak eklenecek -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // DOM elementlerini seçme
+        const colorPicker = document.getElementById('colorPicker');
+        const colorFormat = document.getElementById('colorFormat');
+        const colorValue = document.getElementById('colorValue');
+        const colorPreview = document.getElementById('colorPreview');
+        const colorHistory = document.getElementById('colorHistory');
+        const copyBtn = document.getElementById('copyBtn');
+        const saveBtn = document.getElementById('saveBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const contrastRatio = document.getElementById('contrastRatio');
+        const brightness = document.getElementById('brightness');
+        const imageInput = document.getElementById('imageInput');
+        const imagePreview = document.getElementById('imagePreview');
+        const previewImage = document.getElementById('previewImage');
+        const colorPickerCursor = document.getElementById('colorPickerCursor');
+        const colorValueTooltip = document.getElementById('colorValueTooltip');
+        const addPopularColorBtn = document.getElementById('addPopularColorBtn');
+        const popularColors = document.getElementById('popularColors');
+        const savePaletteBtn = document.getElementById('savePaletteBtn');
+        const colorPalettes = document.getElementById('colorPalettes');
+        const paletteSelect = document.getElementById('paletteSelect');
+        const createGradientBtn = document.getElementById('createGradientBtn');
+        const gradientPreview = document.getElementById('gradientPreview');
+        const gradientAngle = document.getElementById('gradientAngle');
+        const gradientAngleValue = document.getElementById('gradientAngleValue');
+        const copyGradientBtn = document.getElementById('copyGradientBtn');
+        const saveGradientBtn = document.getElementById('saveGradientBtn');
+        
+        // Import/Export butonları
+        const importFile = document.getElementById('importFile');
+        const importPalettesBtn = document.getElementById('importPalettesBtn');
+        const importGradientsBtn = document.getElementById('importGradientsBtn');
+        const importAllBtn = document.getElementById('importAllBtn');
+        const exportPalettesBtn = document.getElementById('exportPalettesBtn');
+        const exportGradientsBtn = document.getElementById('exportGradientsBtn');
+        const exportAllBtn = document.getElementById('exportAllBtn');
+
+        // LocalStorage'dan renk geçmişini yükleme
+        let savedColors = JSON.parse(localStorage.getItem('colorHistory')) || [];
+        let savedPalettes = JSON.parse(localStorage.getItem('colorPalettes')) || [];
+        let popularColorsList = JSON.parse(localStorage.getItem('popularColors')) || [];
+        let savedGradients = JSON.parse(localStorage.getItem('savedGradients')) || [];
+        let colorNames = JSON.parse(localStorage.getItem('colorNames')) || {};
+
+        // Import/Export fonksiyonları
+        function exportToJSON(data, filename) {
+            const jsonString = JSON.stringify(data, null, 2);
+            const blob = new Blob([jsonString], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            
+            setTimeout(() => {
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            }, 100);
+        }
+        
+        function importFromJSON(file, callback) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    callback(data);
+                } catch (error) {
+                    alert('Geçersiz JSON dosyası: ' + error.message);
+                }
+            };
+            reader.readAsText(file);
+        }
+        
+        // Export butonları için event listener'lar
+        exportPalettesBtn.addEventListener('click', () => {
+            exportToJSON(savedPalettes, 'renk_paletleri.json');
+        });
+        
+        exportGradientsBtn.addEventListener('click', () => {
+            exportToJSON(savedGradients, 'gradientler.json');
+        });
+        
+        exportAllBtn.addEventListener('click', () => {
+            const allData = {
+                colorHistory: savedColors,
+                colorPalettes: savedPalettes,
+                popularColors: popularColorsList,
+                savedGradients: savedGradients,
+                colorNames: colorNames
+            };
+            exportToJSON(allData, 'tum_veriler.json');
+        });
+        
+        // Import butonları için event listener'lar
+        importPalettesBtn.addEventListener('click', () => {
+            importFile.accept = '.json';
+            importFile.onchange = function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    importFromJSON(file, (data) => {
+                        if (Array.isArray(data)) {
+                            savedPalettes = data;
+                            localStorage.setItem('colorPalettes', JSON.stringify(savedPalettes));
+                            loadPalettes();
+                            alert('Renk paletleri başarıyla içe aktarıldı!');
+                        } else {
+                            alert('Geçersiz veri formatı. Renk paletleri bir dizi olmalıdır.');
+                        }
+                    });
+                }
+            };
+            importFile.click();
+        });
+        
+        importGradientsBtn.addEventListener('click', () => {
+            importFile.accept = '.json';
+            importFile.onchange = function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    importFromJSON(file, (data) => {
+                        if (Array.isArray(data)) {
+                            savedGradients = data;
+                            localStorage.setItem('savedGradients', JSON.stringify(savedGradients));
+                            loadGradientCatalog();
+                            alert('Gradientler başarıyla içe aktarıldı!');
+                        } else {
+                            alert('Geçersiz veri formatı. Gradientler bir dizi olmalıdır.');
+                        }
+                    });
+                }
+            };
+            importFile.click();
+        });
+        
+        importAllBtn.addEventListener('click', () => {
+            importFile.accept = '.json';
+            importFile.onchange = function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    importFromJSON(file, (data) => {
+                        if (data.colorHistory) savedColors = data.colorHistory;
+                        if (data.colorPalettes) savedPalettes = data.colorPalettes;
+                        if (data.popularColors) popularColorsList = data.popularColors;
+                        if (data.savedGradients) savedGradients = data.savedGradients;
+                        if (data.colorNames) colorNames = data.colorNames;
+                        
+                        // LocalStorage'ı güncelle
+                        localStorage.setItem('colorHistory', JSON.stringify(savedColors));
+                        localStorage.setItem('colorPalettes', JSON.stringify(savedPalettes));
+                        localStorage.setItem('popularColors', JSON.stringify(popularColorsList));
+                        localStorage.setItem('savedGradients', JSON.stringify(savedGradients));
+                        localStorage.setItem('colorNames', JSON.stringify(colorNames));
+                        
+                        // Arayüzü güncelle
+                        updateColorHistory();
+                        loadPopularColors();
+                        loadPalettes();
+                        loadGradientCatalog();
+                        
+                        alert('Tüm veriler başarıyla içe aktarıldı!');
+                    });
+                }
+            };
+            importFile.click();
+        });
+
+        // Popüler renkleri yükle
+        function loadPopularColors() {
+            popularColors.innerHTML = '';
+            if (popularColorsList.length > 0) {
+                popularColorsList.forEach(color => {
+                    const colorBox = document.createElement('div');
+                    colorBox.className = 'color-box rounded cursor-pointer';
+                    colorBox.style.backgroundColor = color;
+                    colorBox.title = color;
+                    colorBox.onclick = () => {
+                        colorPicker.value = color;
+                        updateColor();
+                    };
+                    popularColors.appendChild(colorBox);
+                });
+            }
+        }
+
+        // Paletleri yükle
+        function loadPalettes() {
+            colorPalettes.innerHTML = '';
+            paletteSelect.innerHTML = '<option value="">Palet Seçin</option>';
+            
+            savedPalettes.forEach((palette, index) => {
+                // Palet seçim listesine ekle
+                const option = document.createElement('option');
+                option.value = index;
+                option.textContent = palette.name;
+                paletteSelect.appendChild(option);
+                
+                // Palet kartını oluştur
+                const paletteCard = document.createElement('div');
+                paletteCard.className = 'border rounded-lg p-3 space-y-2';
+                
+                const paletteHeader = document.createElement('div');
+                paletteHeader.className = 'flex justify-between items-center';
+                
+                const paletteName = document.createElement('h3');
+                paletteName.className = 'font-medium text-gray-700';
+                paletteName.textContent = palette.name;
+                
+                const paletteActions = document.createElement('div');
+                paletteActions.className = 'flex space-x-2';
+                
+                const usePaletteBtn = document.createElement('button');
+                usePaletteBtn.className = 'text-blue-500 hover:text-blue-700';
+                usePaletteBtn.innerHTML = '<i class="fas fa-paint-brush"></i>';
+                usePaletteBtn.title = 'Paleti Kullan';
+                usePaletteBtn.onclick = () => {
+                    paletteSelect.value = index;
+                    createGradient();
+                };
+                
+                const deletePaletteBtn = document.createElement('button');
+                deletePaletteBtn.className = 'text-red-500 hover:text-red-700';
+                deletePaletteBtn.innerHTML = '<i class="fas fa-trash"></i>';
+                deletePaletteBtn.title = 'Paleti Sil';
+                deletePaletteBtn.onclick = () => {
+                    if (confirm('Bu paleti silmek istediğinizden emin misiniz?')) {
+                        savedPalettes.splice(index, 1);
+                        localStorage.setItem('colorPalettes', JSON.stringify(savedPalettes));
+                        loadPalettes();
+                    }
+                };
+                
+                paletteActions.appendChild(usePaletteBtn);
+                paletteActions.appendChild(deletePaletteBtn);
+                
+                paletteHeader.appendChild(paletteName);
+                paletteHeader.appendChild(paletteActions);
+                
+                const paletteColors = document.createElement('div');
+                paletteColors.className = 'color-palette';
+                
+                palette.colors.forEach(color => {
+                    const colorBox = document.createElement('div');
+                    colorBox.className = 'color-box rounded cursor-pointer';
+                    colorBox.style.backgroundColor = color;
+                    colorBox.title = color;
+                    colorBox.onclick = () => {
+                        colorPicker.value = color;
+                        updateColor();
+                    };
+                    paletteColors.appendChild(colorBox);
+                });
+                
+                paletteCard.appendChild(paletteHeader);
+                paletteCard.appendChild(paletteColors);
+                
+                colorPalettes.appendChild(paletteCard);
+            });
+        }
+
+        // Gradient oluştur
+        function createGradient() {
+            const paletteIndex = paletteSelect.value;
+            if (paletteIndex === '') return;
+            
+            const palette = savedPalettes[paletteIndex];
+            if (!palette || palette.colors.length < 2) return;
+            
+            const angle = gradientAngle.value;
+            const gradientColors = palette.colors.join(', ');
+            const gradient = `linear-gradient(${angle}deg, ${gradientColors})`;
+            
+            gradientPreview.style.background = gradient;
+            gradientPreview.dataset.gradient = gradient;
+        }
+
+        // Görsel yükleme işlemi
+        imageInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    previewImage.src = e.target.result;
+                    imagePreview.classList.remove('hidden');
+                    
+                    // Görsel yüklendiğinde canvas'ı hazırla
+                    previewImage.onload = function() {
+                        // Canvas'ı görsel boyutuna ayarla
+                        const canvas = document.createElement('canvas');
+                        canvas.width = this.naturalWidth;
+                        canvas.height = this.naturalHeight;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(this, 0, 0);
+                        
+                        // Canvas'ı global değişkene kaydet
+                        window.imageCanvas = canvas;
+                    };
+                }
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // Görselden renk seçme
+        previewImage.addEventListener('mousemove', function(e) {
+            if (!window.imageCanvas) return;
+            
+            const rect = this.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            
+            // Görsel üzerindeki konumu hesapla
+            const scaleX = this.naturalWidth / rect.width;
+            const scaleY = this.naturalHeight / rect.height;
+            const canvasX = Math.floor(x * scaleX);
+            const canvasY = Math.floor(y * scaleY);
+            
+            // Renk seçici imlecini güncelle
+            colorPickerCursor.style.left = x + 'px';
+            colorPickerCursor.style.top = y + 'px';
+            colorPickerCursor.classList.remove('hidden');
+            
+            // Renk değerini al ve göster
+            const ctx = window.imageCanvas.getContext('2d');
+            const pixel = ctx.getImageData(canvasX, canvasY, 1, 1).data;
+            const color = `#${pixel[0].toString(16).padStart(2, '0')}${pixel[1].toString(16).padStart(2, '0')}${pixel[2].toString(16).padStart(2, '0')}`;
+            
+            // Renk değerini tooltip olarak göster
+            colorValueTooltip.textContent = color;
+            colorValueTooltip.style.left = (x + 15) + 'px';
+            colorValueTooltip.style.top = (y + 15) + 'px';
+            colorValueTooltip.classList.remove('hidden');
+            
+            // Renk önizlemesini güncelle
+            colorPickerCursor.style.backgroundColor = color;
+        });
+
+        previewImage.addEventListener('click', function(e) {
+            if (!window.imageCanvas) return;
+            
+            const rect = this.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            
+            // Görsel üzerindeki konumu hesapla
+            const scaleX = this.naturalWidth / rect.width;
+            const scaleY = this.naturalHeight / rect.height;
+            const canvasX = Math.floor(x * scaleX);
+            const canvasY = Math.floor(y * scaleY);
+            
+            // Renk değerini al
+            const ctx = window.imageCanvas.getContext('2d');
+            const pixel = ctx.getImageData(canvasX, canvasY, 1, 1).data;
+            const color = `#${pixel[0].toString(16).padStart(2, '0')}${pixel[1].toString(16).padStart(2, '0')}${pixel[2].toString(16).padStart(2, '0')}`;
+            
+            // Renk seçiciyi güncelle
+            colorPicker.value = color;
+            updateColor();
+            
+            // Seçilen rengi vurgula
+            colorPickerCursor.style.backgroundColor = color;
+            colorValueTooltip.textContent = color + ' (Seçildi)';
+            
+            // 1 saniye sonra tooltip'i gizle
+            setTimeout(() => {
+                colorValueTooltip.classList.add('hidden');
+            }, 1000);
+        });
+
+        previewImage.addEventListener('mouseleave', function() {
+            colorPickerCursor.classList.add('hidden');
+            colorValueTooltip.classList.add('hidden');
+        });
+
+        // Renk geçmişini güncelleme fonksiyonu
+        function updateColorHistory() {
+            colorHistory.innerHTML = '';
+            savedColors.forEach(color => {
+                const colorBox = document.createElement('div');
+                colorBox.className = 'color-box animate-fade-in';
+                colorBox.style.backgroundColor = color;
+                colorBox.title = color;
+                colorBox.onclick = () => {
+                    colorPicker.value = color;
+                    updateColor();
+                };
+                colorHistory.appendChild(colorBox);
+            });
+        }
+
+        // Parlaklık hesaplama
+        function calculateBrightness(r, g, b) {
+            return Math.round((r * 299 + g * 587 + b * 114) / 1000);
+        }
+
+        // Kontrast oranı hesaplama
+        function calculateContrastRatio(r, g, b) {
+            const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+            const whiteContrast = (brightness + 0.05) / (255 + 0.05);
+            const blackContrast = (255 + 0.05) / (brightness + 0.05);
+            return Math.max(whiteContrast, blackContrast).toFixed(2);
+        }
+
+        // CMYK dönüşümü
+        function rgbToCmyk(r, g, b) {
+            let c = 1 - (r / 255);
+            let m = 1 - (g / 255);
+            let y = 1 - (b / 255);
+            let k = Math.min(c, m, y);
+            
+            c = Math.round(((c - k) / (1 - k)) * 100) || 0;
+            m = Math.round(((m - k) / (1 - k)) * 100) || 0;
+            y = Math.round(((y - k) / (1 - k)) * 100) || 0;
+            k = Math.round(k * 100);
+            
+            return `cmyk(${c}%, ${m}%, ${y}%, ${k}%)`;
+        }
+
+        // Renk değerini güncelleme fonksiyonu
+        function updateColor() {
+            const color = colorPicker.value;
+            colorPreview.style.backgroundColor = color;
+            
+            // HEX'ten RGB'ye dönüşüm için ortak değişkenler
+            const r = parseInt(color.substr(1,2), 16);
+            const g = parseInt(color.substr(3,2), 16);
+            const b = parseInt(color.substr(5,2), 16);
+            
+            // Parlaklık ve kontrast hesaplama
+            const brightnessValue = calculateBrightness(r, g, b);
+            const contrastValue = calculateContrastRatio(r, g, b);
+            
+            brightness.textContent = `${brightnessValue}%`;
+            contrastRatio.textContent = contrastValue;
+            
+            let formattedColor;
+            switch(colorFormat.value) {
+                case 'rgb':
+                    formattedColor = `rgb(${r}, ${g}, ${b})`;
+                    break;
+                case 'hsl':
+                    const rgbToHsl = (r, g, b) => {
+                        r /= 255;
+                        g /= 255;
+                        b /= 255;
+                        const max = Math.max(r, g, b);
+                        const min = Math.min(r, g, b);
+                        let h, s, l = (max + min) / 2;
+
+                        if (max === min) {
+                            h = s = 0;
+                        } else {
+                            const d = max - min;
+                            s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+                            switch (max) {
+                                case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+                                case g: h = (b - r) / d + 2; break;
+                                case b: h = (r - g) / d + 4; break;
+                            }
+                            h /= 6;
+                        }
+
+                        return `hsl(${Math.round(h * 360)}, ${Math.round(s * 100)}%, ${Math.round(l * 100)}%)`;
+                    };
+                    formattedColor = rgbToHsl(r, g, b);
+                    break;
+                case 'cmyk':
+                    formattedColor = rgbToCmyk(r, g, b);
+                    break;
+                default:
+                    formattedColor = color;
+            }
+            
+            colorValue.value = formattedColor;
+        }
+
+        // Popüler renklere tıklama olayı
+        document.querySelectorAll('.color-box').forEach(box => {
+            box.addEventListener('click', () => {
+                colorPicker.value = box.title;
+                updateColor();
+            });
+        });
+
+        // Event Listeners
+        colorPicker.addEventListener('input', updateColor);
+        colorFormat.addEventListener('change', updateColor);
+
+        copyBtn.addEventListener('click', () => {
+            colorValue.select();
+            document.execCommand('copy');
+            const originalText = copyBtn.innerHTML;
+            copyBtn.innerHTML = '<i class="fas fa-check"></i>';
+            setTimeout(() => {
+                copyBtn.innerHTML = originalText;
+            }, 1000);
+        });
+
+        saveBtn.addEventListener('click', () => {
+            const color = colorPicker.value;
+            if (!savedColors.includes(color)) {
+                savedColors.unshift(color);
+                if (savedColors.length > 20) savedColors.pop();
+                localStorage.setItem('colorHistory', JSON.stringify(savedColors));
+                updateColorHistory();
+            }
+        });
+
+        resetBtn.addEventListener('click', () => {
+            if (confirm('Tüm renk geçmişini silmek istediğinizden emin misiniz?')) {
+                savedColors = [];
+                localStorage.removeItem('colorHistory');
+                localStorage.removeItem('colorNames');
+                updateColorHistory();
+            }
+        });
+        
+        // Popüler renk ekleme
+        addPopularColorBtn.addEventListener('click', () => {
+            const color = colorPicker.value;
+            if (!popularColorsList.includes(color)) {
+                popularColorsList.push(color);
+                localStorage.setItem('popularColors', JSON.stringify(popularColorsList));
+                loadPopularColors();
+            }
+        });
+        
+        // Palet kaydetme
+        savePaletteBtn.addEventListener('click', () => {
+            if (savedColors.length < 2) {
+                alert('Palet kaydetmek için en az 2 renk seçmelisiniz.');
+                return;
+            }
+            
+            const paletteName = prompt('Palet için bir isim girin:');
+            if (paletteName) {
+                const newPalette = {
+                    name: paletteName,
+                    colors: [...savedColors]
+                };
+                
+                savedPalettes.push(newPalette);
+                localStorage.setItem('colorPalettes', JSON.stringify(savedPalettes));
+                loadPalettes();
+            }
+        });
+        
+        // Gradient oluşturma
+        createGradientBtn.addEventListener('click', createGradient);
+        
+        // Gradient kopyalama
+        copyGradientBtn.addEventListener('click', () => {
+            const gradient = gradientPreview.dataset.gradient;
+            if (gradient) {
+                navigator.clipboard.writeText(gradient).then(() => {
+                    const originalText = copyGradientBtn.innerHTML;
+                    copyGradientBtn.innerHTML = '<i class="fas fa-check"></i>';
+                    setTimeout(() => {
+                        copyGradientBtn.innerHTML = originalText;
+                    }, 1000);
+                });
+            }
+        });
+
+        // Gradient kataloğunu yükle
+        function loadGradientCatalog() {
+            const gradientCatalog = document.getElementById('gradientCatalog');
+            gradientCatalog.innerHTML = '';
+            
+            if (savedGradients.length === 0) {
+                const emptyMessage = document.createElement('div');
+                emptyMessage.className = 'col-span-2 text-center py-8 text-gray-500';
+                emptyMessage.innerHTML = '<i class="fas fa-palette text-4xl mb-2"></i><p>Henüz kaydedilmiş gradient bulunmuyor.</p>';
+                gradientCatalog.appendChild(emptyMessage);
+                return;
+            }
+            
+            savedGradients.forEach((gradient, index) => {
+                const gradientCard = document.createElement('div');
+                gradientCard.className = 'border rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-300';
+                
+                const gradientPreview = document.createElement('div');
+                gradientPreview.className = 'h-24';
+                gradientPreview.style.background = gradient.value;
+                
+                const gradientInfo = document.createElement('div');
+                gradientInfo.className = 'p-3 bg-white';
+                
+                const gradientName = document.createElement('h4');
+                gradientName.className = 'font-medium text-gray-800 truncate';
+                gradientName.textContent = gradient.name || `Gradient ${index + 1}`;
+                
+                const gradientActions = document.createElement('div');
+                gradientActions.className = 'flex justify-between mt-2';
+                
+                const useGradientBtn = document.createElement('button');
+                useGradientBtn.className = 'text-blue-500 hover:text-blue-700';
+                useGradientBtn.innerHTML = '<i class="fas fa-paint-brush"></i>';
+                useGradientBtn.title = 'Gradienti Kullan';
+                useGradientBtn.onclick = () => {
+                    gradientPreview.style.background = gradient.value;
+                    gradientPreview.dataset.gradient = gradient.value;
+                };
+                
+                const editGradientBtn = document.createElement('button');
+                editGradientBtn.className = 'text-yellow-500 hover:text-yellow-700';
+                editGradientBtn.innerHTML = '<i class="fas fa-edit"></i>';
+                editGradientBtn.title = 'Gradienti Düzenle';
+                editGradientBtn.onclick = () => {
+                    const newName = prompt('Gradient için yeni bir isim girin:', gradient.name || `Gradient ${index + 1}`);
+                    if (newName) {
+                        savedGradients[index].name = newName;
+                        localStorage.setItem('savedGradients', JSON.stringify(savedGradients));
+                        loadGradientCatalog();
+                    }
+                };
+                
+                const deleteGradientBtn = document.createElement('button');
+                deleteGradientBtn.className = 'text-red-500 hover:text-red-700';
+                deleteGradientBtn.innerHTML = '<i class="fas fa-trash"></i>';
+                deleteGradientBtn.title = 'Gradienti Sil';
+                deleteGradientBtn.onclick = () => {
+                    if (confirm('Bu gradienti silmek istediğinizden emin misiniz?')) {
+                        savedGradients.splice(index, 1);
+                        localStorage.setItem('savedGradients', JSON.stringify(savedGradients));
+                        loadGradientCatalog();
+                    }
+                };
+                
+                gradientActions.appendChild(useGradientBtn);
+                gradientActions.appendChild(editGradientBtn);
+                gradientActions.appendChild(deleteGradientBtn);
+                
+                gradientInfo.appendChild(gradientName);
+                gradientInfo.appendChild(gradientActions);
+                
+                gradientCard.appendChild(gradientPreview);
+                gradientCard.appendChild(gradientInfo);
+                
+                gradientCatalog.appendChild(gradientCard);
+            });
+        }
+
+        // Gradient kaydetme
+        saveGradientBtn.addEventListener('click', () => {
+            const gradient = gradientPreview.dataset.gradient;
+            if (!gradient) {
+                alert('Önce bir gradient oluşturmalısınız.');
+                return;
+            }
+            
+            const gradientName = prompt('Gradient için bir isim girin:');
+            if (gradientName) {
+                const newGradient = {
+                    name: gradientName,
+                    value: gradient
+                };
+                
+                savedGradients.push(newGradient);
+                localStorage.setItem('savedGradients', JSON.stringify(savedGradients));
+                loadGradientCatalog();
+            }
+        });
+
+        // Her şeyi sıfırla butonu
+        const resetAllBtn = document.getElementById('resetAllBtn');
+        resetAllBtn.addEventListener('click', () => {
+            if (confirm('TÜM VERİLERİ SİLMEK İSTEDİĞİNİZDEN EMİN MİSİNİZ?\n\nBu işlem geri alınamaz ve şunları silecek:\n- Tüm renk geçmişi\n- Tüm renk paletleri\n- Tüm popüler renkler\n- Tüm renk isimleri\n- Tüm kaydedilmiş gradientler')) {
+                // Tüm verileri temizle
+                savedColors = [];
+                savedPalettes = [];
+                popularColorsList = [];
+                savedGradients = [];
+                
+                // LocalStorage'dan tüm verileri sil
+                localStorage.removeItem('colorHistory');
+                localStorage.removeItem('colorPalettes');
+                localStorage.removeItem('popularColors');
+                localStorage.removeItem('colorNames');
+                localStorage.removeItem('savedGradients');
+                
+                // Arayüzü güncelle
+                updateColorHistory();
+                
+                // Popüler renkleri temizle
+                popularColors.innerHTML = '';
+            
+                // Paletleri temizle
+                colorPalettes.innerHTML = '';
+                paletteSelect.innerHTML = '<option value="">Palet Seçin</option>';
+                
+                // Gradient kataloğunu temizle
+                loadGradientCatalog();
+                
+                // Renk seçiciyi varsayılan renge ayarla
+                colorPicker.value = '#000000';
+                updateColor();
+                
+                // Gradient önizlemeyi temizle
+                gradientPreview.style.background = '';
+                gradientPreview.dataset.gradient = '';
+                
+                // Palet seçimini sıfırla
+                paletteSelect.value = '';
+                
+                alert('Tüm veriler başarıyla silindi!');
+            }
+        });
+
+        // Sayfa yüklendiğinde renk geçmişini göster
+        updateColorHistory();
+        updateColor();
+        loadPopularColors();
+        loadPalettes();
+        loadGradientCatalog();
+
+        // Gradient açısı değiştiğinde
+        gradientAngle.addEventListener('input', () => {
+            gradientAngleValue.textContent = `${gradientAngle.value}°`;
+            createGradient();
+        });
+
+        // Mobil menü toggle işlevi
+        const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+        const mobileMenu = document.getElementById('mobileMenu');
+        
+        mobileMenuBtn.addEventListener('click', () => {
+            mobileMenu.classList.toggle('hidden');
+            // Menü ikonunu değiştir
+            if (mobileMenu.classList.contains('hidden')) {
+                mobileMenuBtn.innerHTML = '<i class="fas fa-bars text-xl"></i>';
+            } else {
+                mobileMenuBtn.innerHTML = '<i class="fas fa-times text-xl"></i>';
+            }
+        });
+    </script>
+    
+    <!-- Context Menu JavaScript dosyasını import et -->
+    <script src="contextmenu.js"></script>
+    
+    <script>
+        // Sayfa yüklendiğinde context menu'yü başlat
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('Sayfa yüklendi, context menu başlatılıyor...');
+            
+            // Renk kutularına sağ tıklama olayı ekle
+            document.querySelectorAll('.color-box').forEach(box => {
+                box.addEventListener('contextmenu', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('Renk kutusuna sağ tıklandı');
+                    
+                    if (window.colorContextMenu) {
+                        window.colorContextMenu.showMenu(e, box);
+                    } else {
+                        console.error('Context menu bulunamadı!');
+                    }
+                });
+            });
+        });
+    </script>
+
+    <!-- Footer Alanı -->
+    <footer class="bg-gradient-to-r from-gray-800 to-gray-900 text-white mt-12 pt-10 pb-6">
+        <div class="container mx-auto px-4">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
+                <!-- Hakkında -->
+                <div class="space-y-4">
+                    <h3 class="text-xl font-bold mb-4 text-gradient bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-400">Modern Renk Seçici</h3>
+                    <p class="text-gray-300 text-sm leading-relaxed">
+                        Modern Renk Seçici, tasarımcılar, geliştiriciler ve renk tutkunları için geliştirilmiş kapsamlı bir renk yönetim aracıdır. Renk seçimi, renk paletleri oluşturma ve gradient tasarımı için özel olarak tasarlanmıştır.
+                    </p>
+                    <div class="flex space-x-4 pt-4">
+                        <a href="#" class="text-gray-400 hover:text-white transition-colors duration-300">
+                            <i class="fab fa-twitter text-lg"></i>
+                        </a>
+                        <a href="#" class="text-gray-400 hover:text-white transition-colors duration-300">
+                            <i class="fab fa-facebook text-lg"></i>
+                        </a>
+                        <a href="#" class="text-gray-400 hover:text-white transition-colors duration-300">
+                            <i class="fab fa-instagram text-lg"></i>
+                        </a>
+                        <a href="#" class="text-gray-400 hover:text-white transition-colors duration-300">
+                            <i class="fab fa-github text-lg"></i>
+                        </a>
+                        <a href="#" class="text-gray-400 hover:text-white transition-colors duration-300">
+                            <i class="fab fa-linkedin text-lg"></i>
+                        </a>
+                        <a href="#" class="text-gray-400 hover:text-white transition-colors duration-300">
+                            <i class="fab fa-youtube text-lg"></i>
+                        </a>
+                    </div>
+                </div>
+                
+                <!-- Hızlı Bağlantılar -->
+                <div class="space-y-4">
+                    <h3 class="text-lg font-semibold mb-4">Hızlı Bağlantılar</h3>
+                    <ul class="space-y-2 text-gray-400">
+                        <li>
+                            <a href="#" class="hover:text-white transition-colors duration-300 flex items-center">
+                                <i class="fas fa-chevron-right text-xs mr-2"></i> Renk Teorisi Rehberi
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#" class="hover:text-white transition-colors duration-300 flex items-center">
+                                <i class="fas fa-chevron-right text-xs mr-2"></i> Erişilebilirlik Rehberi
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#" class="hover:text-white transition-colors duration-300 flex items-center">
+                                <i class="fas fa-chevron-right text-xs mr-2"></i> Renk Trendleri
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#" class="hover:text-white transition-colors duration-300 flex items-center">
+                                <i class="fas fa-chevron-right text-xs mr-2"></i> Gradient Galerisi
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#" class="hover:text-white transition-colors duration-300 flex items-center">
+                                <i class="fas fa-chevron-right text-xs mr-2"></i> SSS
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#" class="hover:text-white transition-colors duration-300 flex items-center">
+                                <i class="fas fa-chevron-right text-xs mr-2"></i> Blog
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#" class="hover:text-white transition-colors duration-300 flex items-center">
+                                <i class="fas fa-chevron-right text-xs mr-2"></i> Destek
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+                
+                <!-- İletişim -->
+                <div class="space-y-4">
+                    <h3 class="text-lg font-semibold mb-4">İletişim</h3>
+                    <div class="space-y-3 text-gray-400">
+                        <p class="flex items-start">
+                            <i class="fas fa-envelope mt-1 mr-3 text-blue-400"></i>
+                            <span>iletisim@modernrenksecici.com</span>
+                        </p>
+                        <p class="flex items-start">
+                            <i class="fas fa-map-marker-alt mt-1 mr-3 text-blue-400"></i>
+                            <span>İstanbul, Türkiye</span>
+                        </p>
+                        <p class="flex items-start">
+                            <i class="fas fa-phone mt-1 mr-3 text-blue-400"></i>
+                            <span>+90 (212) 123 45 67</span>
+                        </p>
+                    </div>
+                    
+                    <div class="mt-6 pt-4 border-t border-gray-700">
+                        <h4 class="text-sm font-semibold mb-3">Bültenimize Abone Olun</h4>
+                        <div class="flex">
+                            <input type="email" placeholder="E-posta adresiniz" class="bg-gray-700 text-white px-4 py-2 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-blue-500 flex-1">
+                            <button class="bg-gradient-to-r from-blue-500 to-purple-500 text-white px-4 py-2 rounded-r-lg hover:from-blue-600 hover:to-purple-600 transition duration-300">
+                                <i class="fas fa-paper-plane"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Alt Footer -->
+            <div class="pt-8 mt-8 border-t border-gray-700 text-sm text-gray-400 flex flex-col md:flex-row justify-between items-center">
+                <p>&copy; 2023 Modern Renk Seçici. Tüm hakları saklıdır.</p>
+                <div class="flex space-x-6 mt-4 md:mt-0">
+                    <a href="#" class="hover:text-white transition-colors duration-300">Gizlilik Politikası</a>
+                    <a href="#" class="hover:text-white transition-colors duration-300">Kullanım Şartları</a>
+                    <a href="#" class="hover:text-white transition-colors duration-300">Çerez Politikası</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+</body>
+</html> 
